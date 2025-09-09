@@ -15,6 +15,7 @@ module Protocol
 			# @parameter stream [IO] The underlying stream for communication.
 			def initialize(stream)
 				@stream = stream
+				@callback_stack = []
 				
 				# Number of requests sent:
 				@count = 0
@@ -47,7 +48,9 @@ module Protocol
 			end
 			
 			# The redis server doesn't want actual objects (e.g. integers) but only bulk strings. So, we inline it for performance.
-			def write_request(arguments)
+			def write_request(arguments, &block)
+				@callback_stack.push(block) if block
+				
 				write_lines("*#{arguments.size}")
 				
 				@count += 1
@@ -143,7 +146,11 @@ module Protocol
 				# TODO: If an exception (e.g. Async::TimeoutError) propagates out of this function, perhaps @stream should be closed? Otherwise it might be in a weird state.
 			end
 			
-			alias read_response read_object
+			def read_response
+				callback = @callback_stack.pop
+				callback = ->(response) {response} unless callback
+				callback.call(read_object)
+			end
 			
 			private
 			

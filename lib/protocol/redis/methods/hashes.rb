@@ -33,7 +33,7 @@ module Protocol
 				# @parameter value [String]
 				# @returns [Boolean] "true" if new field added, "false" otherwise
 				def hsetnx(key, field, value)
-					call("HSETNX", key, field, value) > 0
+					call("HSETNX", key, field, value) {|result| result > 0}
 				end
 				
 				# Set multiple hash fields to multiple values. O(N) where N is the number of fields being set.
@@ -89,8 +89,7 @@ module Protocol
 				#
 				# See <#hmget> for more details.
 				def mapped_hmget(key, *fields)
-					reply = hmget(key, *fields)
-					Hash[fields.zip(reply)]
+					reply = hmget(key, *fields) {|reply| Hash[fields.zip(reply)]}
 				end
 				
 				# Delete one or more hash fields. O(N) where N is the number of fields to be removed.
@@ -108,7 +107,7 @@ module Protocol
 				# @parameter field [String]
 				# @returns [Boolean]
 				def hexists(key, field)
-					call("HEXISTS", key, field) > 0
+					call("HEXISTS", key, field) {|reply| reply > 0}
 				end
 				
 				# Increment the integer value of a hash field by the given number. O(1).
@@ -128,7 +127,7 @@ module Protocol
 				# @parameter increment [Double]
 				# @returns [Float] field value after increment
 				def hincrbyfloat(key, field, increment)
-					Float(call("HINCRBYFLOAT", key, field, increment))
+					call("HINCRBYFLOAT", key, field, increment) {|reply| Float(reply)}
 				end
 				
 				# Get all the fields in a hash. O(N) where N is the size of the hash.
@@ -152,7 +151,7 @@ module Protocol
 				# @parameter key [Key]
 				# @returns [Hash]
 				def hgetall(key)
-					call("HGETALL", key).each_slice(2).to_h
+					call("HGETALL", key) {|reply| reply.each_slice(2).to_h}
 				end
 				
 				# Iterates fields of Hash types and their associated values. O(1) for every call. O(N) for a complete iteration, including enough command calls for the cursor to return back to 0. N is the number of elements inside the collection.
